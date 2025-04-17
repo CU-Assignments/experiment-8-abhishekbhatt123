@@ -1,0 +1,85 @@
+<%@ page import="java.sql.*, java.util.*" %>
+<%@ page contentType="text/html; charset=UTF-8" %>
+<html>
+<head>
+    <title>Employee List</title>
+</head>
+<body>
+    <h2>Employee List</h2>
+    
+    <!-- Search Form -->
+    <form action="" method="get">
+        <label for="searchId">Search by Employee ID:</label>
+        <input type="text" id="searchId" name="searchId" value="<%= request.getParameter("searchId") != null ? request.getParameter("searchId") : "" %>">
+        <input type="submit" value="Search">
+    </form>
+
+    <h3>Employees:</h3>
+
+    <table border="1">
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Designation</th>
+            <th>Department</th>
+        </tr>
+
+        <%
+            String searchId = request.getParameter("searchId");
+            List<Employee> employees = new ArrayList<>();
+            
+            // Connect to the database and fetch employee records
+            Connection connection = null;
+            Statement statement = null;
+            ResultSet resultSet = null;
+
+            try {
+                // Database connection setup
+                connection = DriverManager.getConnection(
+                    "jdbc:mysql://localhost:3306/company_db", "root", "password");
+                statement = connection.createStatement();
+
+                // Prepare the query depending on searchId
+                String query = (searchId != null && !searchId.isEmpty()) 
+                    ? "SELECT * FROM employees WHERE id = " + searchId 
+                    : "SELECT * FROM employees";
+                
+                resultSet = statement.executeQuery(query);
+
+                // Iterate through the results and create Employee objects
+                while (resultSet.next()) {
+                    Employee employee = new Employee(
+                        resultSet.getInt("id"),
+                        resultSet.getString("name"),
+                        resultSet.getString("designation"),
+                        resultSet.getString("department")
+                    );
+                    employees.add(employee);
+                }
+
+                // Loop through employees and display them in the table
+                for (Employee emp : employees) {
+        %>
+            <tr>
+                <td><%= emp.getId() %></td>
+                <td><%= emp.getName() %></td>
+                <td><%= emp.getDesignation() %></td>
+                <td><%= emp.getDepartment() %></td>
+            </tr>
+        <%
+                }
+            } catch (SQLException e) {
+                out.println("Error: " + e.getMessage());
+            } finally {
+                try {
+                    if (resultSet != null) resultSet.close();
+                    if (statement != null) statement.close();
+                    if (connection != null) connection.close();
+                } catch (SQLException e) {
+                    out.println("Error closing resources: " + e.getMessage());
+                }
+            }
+        %>
+    </table>
+</body>
+</html>
