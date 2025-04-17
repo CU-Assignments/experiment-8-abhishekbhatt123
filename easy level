@@ -1,0 +1,49 @@
+import java.io.*;
+import javax.servlet.*;
+import javax.servlet.http.*;
+import java.sql.*;
+import java.util.*;
+
+public class EmployeeListServlet extends HttpServlet {
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        String searchId = request.getParameter("searchId");
+        List<Employee> employees = new ArrayList<>();
+
+        try {
+            // Database connection
+            Connection connection = DriverManager.getConnection(
+                "jdbc:mysql://localhost:3306/company_db", "root", "password");
+            
+            Statement statement = connection.createStatement();
+            String query = searchId != null && !searchId.isEmpty() 
+                ? "SELECT * FROM employees WHERE id = " + searchId 
+                : "SELECT * FROM employees";
+            
+            ResultSet resultSet = statement.executeQuery(query);
+            
+            while (resultSet.next()) {
+                Employee employee = new Employee(
+                    resultSet.getInt("id"),
+                    resultSet.getString("name"),
+                    resultSet.getString("designation"),
+                    resultSet.getString("department")
+                );
+                employees.add(employee);
+            }
+            
+            resultSet.close();
+            statement.close();
+            connection.close();
+            
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        // Set employee list in the request
+        request.setAttribute("employees", employees);
+
+        // Forward to JSP page for displaying results
+        RequestDispatcher dispatcher = request.getRequestDispatcher("employee_list.jsp");
+        dispatcher.forward(request, response);
+    }
+}
